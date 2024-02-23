@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Importation des fichiers CSS et JS de Leaflet, une bibliothèque pour les cartes interactives -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+        integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+        
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+    integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""
+    ></script>
+
+    <!-- Importation des fichiers CSS et JS de Leaflet Draw, une extension pour dessiner sur les cartes Leaflet -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+    <title>MapTest</title>
+</head>
+
+<body>
+    <form method="POST" style="margin: 0px 20px; margin-right: 100px">
+        {% csrf_token %}
+        <div class="col-6 rounded" id="map" style="height: 500px">
+            <div class="leaflet-control"></div>
+        </div>
+        <input id="polygon" style="width: 200px; height: 80px;"/>
+        <button type="submit">save</button>
+    </form>
+    <script>
+        
+        var map = L.map("map").setView([37.225, 9.97], 12.5);
+        L.tileLayer(
+            "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            {
+                attribution:
+                    "Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+            }
+        ).addTo(map);
+
+
+        
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+
+        var drawControl = new L.Control.Draw({
+            draw: {
+                polygon: 
+                {
+                    shapeOptions: {
+                        color: "white", 
+                    },
+                },
+                marker: 
+                {
+                    shapeOptions: {
+                        color: "red", 
+                    },
+                },
+
+       
+                polyline: false, 
+                rectangle: false, 
+                circle: false,
+                circlemarker: false, 
+
+
+            },
+            
+
+            edit: {
+                featureGroup: drawnItems,
+            },
+        });
+
+        map.addControl(drawControl);
+
+        
+        map.on("draw:created", function (e) {
+            var type = e.layerType, layer = e.layer;
+            if (type === "polygon") {
+               
+                drawnItems.addLayer(layer);
+                console.log("polygones: ", layer.toGeoJSON().geometry.coordinates);
+                
+                var myjson = drawnItems.toGeoJSON();
+                console.log("le polygone sous forme GeoJSON", myjson);
+                
+
+                let coords =  myjson.features.map(feature => feature.geometry.coordinates);
+                const multipolygone = {
+                    type :"multiPolygon ",
+                    coordinates  : coords,
+
+                };
+                console.log("multipolygon ", multipolygone);
+                document.getElementById("polygon").value= JSON.stringify(multipolygone);
+            }
+
+
+            if (type === "marker") {
+               
+               drawnItems.addLayer(layer);
+               console.log("marker: ", layer.toGeoJSON().geometry.coordinates);
+               
+               var myjson = drawnItems.toGeoJSON();
+               console.log("Marker sous forme GeoJSON", myjson);
+                
+               let coords =  myjson.features.map(feature => feature.geometry.coordinates);
+                const multimarker = {
+                    type :"multiPolygon ",
+                    coordinates  : coords,
+
+                };
+                console.log("multipolygon ", multimarker);
+                document.getElementById("polygon").value= JSON.stringify(multimarker)
+
+           }
+        });
+
+
+    </script>
+</body>
+
+</html>
